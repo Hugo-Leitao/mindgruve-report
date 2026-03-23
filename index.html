@@ -64,14 +64,37 @@
 
         /* FILTERS */
         .filter-bar { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px; align-items:flex-end; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; }
-        .filter-group { display:flex; flex-direction:column; gap:4px; }
+        .filter-group { display:flex; flex-direction:column; gap:4px; position:relative; }
         .filter-group label { font-size:0.65rem; font-weight:700; text-transform:uppercase; color:var(--text-3); letter-spacing:0.5px; }
         .filter-group select,.filter-group input { background:var(--bg); border:1px solid var(--border); color:var(--text-1); padding:6px 10px; border-radius:4px; font-size:0.75rem; font-family:'DM Sans',sans-serif; min-width:100px; }
-        .checkbox-box { background:var(--bg); border:1px solid var(--border); border-radius:4px; max-height:80px; overflow-y:auto; padding:6px; min-width:140px; }
-        .cb-item { display:flex; align-items:center; gap:5px; font-size:0.7rem; color:var(--text-2); margin-bottom:3px; cursor:pointer; }
-        .cb-item input { accent-color:var(--accent-red); }
-        .cb-action { font-size:0.6rem; color:var(--accent-red); cursor:pointer; margin-left:auto; }
-        .cb-action:hover { text-decoration:underline; }
+
+        /* MULTI-SELECT DROPDOWN */
+        .ms-trigger { background:var(--bg); border:1px solid var(--border); color:var(--text-1); padding:7px 30px 7px 10px; border-radius:6px; font-size:0.75rem; font-family:'DM Sans',sans-serif; min-width:160px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:border-color .2s; position:relative; user-select:none; white-space:nowrap; }
+        .ms-trigger:hover { border-color:var(--accent-red); }
+        .ms-trigger.open { border-color:var(--accent-red); border-radius:6px 6px 0 0; }
+        .ms-trigger::after { content:'▾'; position:absolute; right:10px; color:var(--text-3); font-size:0.65rem; transition:transform .2s; }
+        .ms-trigger.open::after { transform:rotate(180deg); }
+        .ms-badge { background:var(--accent-red); color:white; font-size:0.55rem; font-weight:800; padding:1px 6px; border-radius:10px; min-width:18px; text-align:center; line-height:1.4; }
+        .ms-text { color:var(--text-2); font-size:0.7rem; overflow:hidden; text-overflow:ellipsis; }
+
+        .ms-dropdown { position:absolute; top:100%; left:0; right:0; min-width:200px; background:var(--bg-card); border:1px solid var(--accent-red); border-top:none; border-radius:0 0 6px 6px; z-index:1000; box-shadow:0 8px 24px rgba(0,0,0,0.5); display:none; }
+        .ms-dropdown.open { display:block; }
+        .ms-actions { display:flex; gap:0; border-bottom:1px solid var(--border); }
+        .ms-act-btn { flex:1; padding:7px; font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-3); cursor:pointer; text-align:center; transition:all .15s; border:none; background:transparent; font-family:'DM Sans',sans-serif; }
+        .ms-act-btn:hover { background:rgba(255,255,255,0.04); color:var(--text-1); }
+        .ms-act-btn:first-child { border-right:1px solid var(--border); }
+        .ms-search { width:100%; background:var(--bg); border:none; border-bottom:1px solid var(--border); color:var(--text-1); padding:7px 10px; font-size:0.7rem; font-family:'DM Sans',sans-serif; outline:none; }
+        .ms-search::placeholder { color:var(--text-3); }
+        .ms-list { max-height:200px; overflow-y:auto; padding:4px 0; }
+        .ms-list::-webkit-scrollbar { width:4px; }
+        .ms-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+        .ms-item { display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer; transition:background .1s; font-size:0.7rem; color:var(--text-2); }
+        .ms-item:hover { background:rgba(255,255,255,0.04); }
+        .ms-item.selected { color:var(--text-1); }
+        .ms-check { width:14px; height:14px; border:1.5px solid var(--border); border-radius:3px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+        .ms-item.selected .ms-check { background:var(--accent-red); border-color:var(--accent-red); }
+        .ms-item.selected .ms-check::after { content:'✓'; color:white; font-size:0.55rem; font-weight:800; }
+        .ms-item-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
         /* CONTENT */
         #mainContent { display:none; }
@@ -177,14 +200,14 @@
 
     <!-- FILTERS -->
     <div class="filter-bar" id="filterBar" style="display:none;">
-        <div class="filter-group"><label>Anos</label><div class="checkbox-box" id="yearList" style="min-width:80px;"></div></div>
+        <div class="filter-group" id="fg_year"></div>
         <div class="filter-group">
             <label>Período Mensal</label>
             <div style="display:flex;gap:6px;"><select id="monthStart"></select><span style="color:var(--text-3);align-self:center;">a</span><select id="monthEnd"></select></div>
         </div>
-        <div class="filter-group"><div style="display:flex;align-items:center;gap:6px;"><label>Marcas</label><span class="cb-action" onclick="toggleAll('brandList',false)">limpar</span></div><div class="checkbox-box" id="brandList"></div></div>
-        <div class="filter-group"><div style="display:flex;align-items:center;gap:6px;"><label>Canais</label><span class="cb-action" onclick="toggleAll('channelList',false)">limpar</span></div><div class="checkbox-box" id="channelList"></div></div>
-        <div class="filter-group"><div style="display:flex;align-items:center;gap:6px;"><label>Portfólios</label><span class="cb-action" onclick="toggleAll('portfolioList',false)">limpar</span></div><div class="checkbox-box" id="portfolioList"></div></div>
+        <div class="filter-group" id="fg_brand"></div>
+        <div class="filter-group" id="fg_channel"></div>
+        <div class="filter-group" id="fg_portfolio"></div>
         <div class="filter-group" style="margin-left:auto;"><label>&nbsp;</label><button class="btn-action" onclick="processAndRender()">ATUALIZAR</button></div>
     </div>
 
@@ -431,22 +454,137 @@ function dlCard(elId,name){const el=document.getElementById(elId);if(!el)return;
 function exportAllImages(){['secKpi','secTrend','secTable','secQuarter','secMonthly','secHeatmap','secChannel','secTop','secGrowth'].forEach((id,i)=>setTimeout(()=>dlCard(id,id),i*800));}
 function exportJSON(){if(!selectedYears.length)return alert('Carregue dados primeiro.');const p={years:selectedYears,rows:[]};selectedYears.forEach(y=>(yearlyData[y]||[]).forEach(r=>p.rows.push(r)));const b=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.download=`Mindgruve_Data_${selectedYears[0]}-${selectedYears[selectedYears.length-1]}.json`;a.href=URL.createObjectURL(b);a.click();}
 
+// ════════════════════ MULTI-SELECT DROPDOWN COMPONENT ════════════════════
+const msInstances = {};
+
+function createMultiSelect(containerId, id, labelText, items, allSelected=true, searchable=true){
+    const container = document.getElementById(containerId);
+    const selected = new Set(allSelected ? items : []);
+    
+    container.innerHTML = `
+        <label>${labelText}</label>
+        <div class="ms-trigger" id="ms_trigger_${id}" onclick="msToggle('${id}')">
+            <span class="ms-badge" id="ms_badge_${id}">${selected.size}</span>
+            <span class="ms-text" id="ms_text_${id}"></span>
+        </div>
+        <div class="ms-dropdown" id="ms_dd_${id}">
+            <div class="ms-actions">
+                <button class="ms-act-btn" onclick="msSelectAll('${id}')">✓ Todos</button>
+                <button class="ms-act-btn" onclick="msClearAll('${id}')">✕ Limpar</button>
+            </div>
+            ${searchable && items.length > 6 ? `<input class="ms-search" placeholder="Buscar..." oninput="msFilter('${id}',this.value)" id="ms_search_${id}">` : ''}
+            <div class="ms-list" id="ms_list_${id}"></div>
+        </div>`;
+    
+    msInstances[id] = { items, selected, containerId };
+    msRenderList(id);
+    msUpdateTrigger(id);
+}
+
+function msRenderList(id, filter=''){
+    const inst = msInstances[id];
+    const list = document.getElementById(`ms_list_${id}`);
+    const f = filter.toLowerCase();
+    list.innerHTML = inst.items.filter(i => !f || i.toLowerCase().includes(f)).map(i => {
+        const sel = inst.selected.has(i) ? ' selected' : '';
+        return `<div class="ms-item${sel}" onclick="msToggleItem('${id}',this)" data-value="${i}">
+            <span class="ms-check"></span>
+            <span class="ms-item-label">${i}</span>
+        </div>`;
+    }).join('');
+}
+
+function msUpdateTrigger(id){
+    const inst = msInstances[id];
+    const badge = document.getElementById(`ms_badge_${id}`);
+    const text = document.getElementById(`ms_text_${id}`);
+    const count = inst.selected.size;
+    const total = inst.items.length;
+    badge.textContent = count;
+    badge.style.background = count === 0 ? 'var(--text-3)' : count === total ? 'var(--accent-green)' : 'var(--accent-red)';
+    if(count === 0) text.textContent = 'Nenhum';
+    else if(count === total) text.textContent = 'Todos';
+    else if(count <= 2) text.textContent = [...inst.selected].join(', ');
+    else text.textContent = `${count} de ${total}`;
+}
+
+function msToggle(id){
+    // Close all others first
+    Object.keys(msInstances).forEach(k => {
+        if(k !== id){
+            document.getElementById(`ms_dd_${k}`)?.classList.remove('open');
+            document.getElementById(`ms_trigger_${k}`)?.classList.remove('open');
+        }
+    });
+    const dd = document.getElementById(`ms_dd_${id}`);
+    const trigger = document.getElementById(`ms_trigger_${id}`);
+    const isOpen = dd.classList.toggle('open');
+    trigger.classList.toggle('open', isOpen);
+    if(isOpen){
+        const search = document.getElementById(`ms_search_${id}`);
+        if(search){ search.value=''; msRenderList(id); search.focus(); }
+    }
+}
+
+function msToggleItem(id, el){
+    const inst = msInstances[id];
+    const val = el.dataset.value;
+    if(inst.selected.has(val)){ inst.selected.delete(val); el.classList.remove('selected'); }
+    else { inst.selected.add(val); el.classList.add('selected'); }
+    msUpdateTrigger(id);
+}
+
+function msSelectAll(id){
+    const inst = msInstances[id];
+    inst.items.forEach(i => inst.selected.add(i));
+    msRenderList(id, document.getElementById(`ms_search_${id}`)?.value || '');
+    msUpdateTrigger(id);
+}
+
+function msClearAll(id){
+    msInstances[id].selected.clear();
+    msRenderList(id, document.getElementById(`ms_search_${id}`)?.value || '');
+    msUpdateTrigger(id);
+}
+
+function msFilter(id, val){ msRenderList(id, val); }
+
+function msGetSelected(id){ return [...(msInstances[id]?.selected || [])]; }
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+    if(!e.target.closest('.filter-group')){
+        Object.keys(msInstances).forEach(k => {
+            document.getElementById(`ms_dd_${k}`)?.classList.remove('open');
+            document.getElementById(`ms_trigger_${k}`)?.classList.remove('open');
+        });
+    }
+});
+
 // ════════════════════ FILTERS ════════════════════
 function initFilters(){
-    const years=[...new Set(rawData.map(d=>d.year))].sort();const brands=[...new Set(rawData.map(d=>d.advertiser))].sort();const channels=[...new Set(rawData.map(d=>d.type))].sort();const ports=[...new Set(rawData.map(d=>d.portfolio))].filter(p=>p&&p!=='-').sort();
-    renderChecks('yearList',years.map(String),true);renderChecks('brandList',brands,true);renderChecks('channelList',channels,true);renderChecks('portfolioList',ports,true);
+    const years=[...new Set(rawData.map(d=>d.year))].sort();
+    const brands=[...new Set(rawData.map(d=>d.advertiser))].sort();
+    const channels=[...new Set(rawData.map(d=>d.type))].sort();
+    const ports=[...new Set(rawData.map(d=>d.portfolio))].filter(p=>p&&p!=='-').sort();
+
+    createMultiSelect('fg_year','year','Anos',years.map(String),true,false);
+    createMultiSelect('fg_brand','brand','Marcas',brands,true,true);
+    createMultiSelect('fg_channel','channel','Canais',channels,true,false);
+    createMultiSelect('fg_portfolio','portfolio','Portfólios',ports,true,true);
+
     const mSel=id=>{const el=document.getElementById(id);el.innerHTML='';MESES.forEach((m,i)=>{const o=document.createElement('option');o.value=i+1;o.textContent=m;el.appendChild(o);});};
     mSel('monthStart');mSel('monthEnd');document.getElementById('monthStart').value=1;document.getElementById('monthEnd').value=12;
     document.getElementById('filterBar').style.display='flex';document.getElementById('mainContent').style.display='block';
     processAndRender();
 }
-function renderChecks(id,items,checked){document.getElementById(id).innerHTML=items.map(i=>`<label class="cb-item"><input type="checkbox" value="${i}" ${checked?'checked':''}>${i}</label>`).join('');}
-function toggleAll(id,st){document.querySelectorAll(`#${id} input`).forEach(c=>c.checked=st);}
-function getChecked(id){return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(c=>c.value);}
 
 // ════════════════════ MAIN RENDER ════════════════════
 function processAndRender(){
-    const years=getChecked('yearList').map(Number).sort();const brands=getChecked('brandList');const channels=getChecked('channelList');const ports=getChecked('portfolioList');
+    const years=msGetSelected('year').map(Number).sort();
+    const brands=msGetSelected('brand');
+    const channels=msGetSelected('channel');
+    const ports=msGetSelected('portfolio');
     const mStart=parseInt(document.getElementById('monthStart').value);const mEnd=parseInt(document.getElementById('monthEnd').value);
     selectedYears=years;yearlyData={};
     const filtered=rawData.filter(d=>years.includes(d.year)&&brands.includes(d.advertiser)&&channels.includes(d.type)&&(d.portfolio==='-'||ports.includes(d.portfolio))&&d.month>=mStart&&d.month<=mEnd);
