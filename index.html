@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -181,7 +182,7 @@
             <div class="sub">Performance Intelligence · Multi-Year Historical Analysis</div>
         </div>
         <div class="header-actions">
-            <button class="btn-outline" onclick="exportJSON()">💾 JSON</button>
+            <button class="btn-action" onclick="generatePPTX()" style="background:var(--accent-blue);">📊 Gerar PPTX</button>
             <button class="btn-outline" onclick="exportAllImages()">📥 PNGs</button>
             <button class="btn-action" onclick="reloadData()">🔄 Atualizar Dados</button>
         </div>
@@ -452,7 +453,148 @@ function calcCAGR(s,e,n){return s>0&&n>0?(Math.pow(e/s,1/n)-1)*100:0;}
 // ════════════════════ DOWNLOAD / EXPORT ════════════════════
 function dlCard(elId,name){const el=document.getElementById(elId);if(!el)return;html2canvas(el,{backgroundColor:'#0c0c0e',scale:3}).then(c=>{const a=document.createElement('a');a.download=`Mindgruve_Annual_${name}.png`;a.href=c.toDataURL('image/png');a.click();});}
 function exportAllImages(){['secKpi','secTrend','secTable','secQuarter','secMonthly','secHeatmap','secChannel','secTop','secGrowth'].forEach((id,i)=>setTimeout(()=>dlCard(id,id),i*800));}
-function exportJSON(){if(!selectedYears.length)return alert('Carregue dados primeiro.');const p={years:selectedYears,rows:[]};selectedYears.forEach(y=>(yearlyData[y]||[]).forEach(r=>p.rows.push(r)));const b=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.download=`Mindgruve_Data_${selectedYears[0]}-${selectedYears[selectedYears.length-1]}.json`;a.href=URL.createObjectURL(b);a.click();}
+
+// ════════════════════ PPTX GENERATOR (in-browser) ════════════════════
+function generatePPTX(){
+    if(!selectedYears.length) return alert('Carregue dados primeiro.');
+
+    const P = {
+        bg:'0C0C0E', card:'16161A', alt:'1C1C21', brd:'2A2A30',
+        t1:'F0EFE9', t2:'9C9CA0', t3:'5C5C62',
+        red:'E04F40', orange:'F5943A', yellow:'FBBF24', green:'34D399',
+        blue:'3B82F6', purple:'A78BFA', cyan:'22D3EE'
+    };
+    const YC = {2020:'94A3B8',2021:'64748B',2022:'A78BFA',2023:'3B82F6',2024:'FBBF24',2025:'E04F40',2026:'22D3EE'};
+    const yc = y => YC[y]||P.t2;
+    const CHC = {'AMS':'E04F40','DSP':'3B82F6','SEARCH ADS':'FBBF24','DISPLAY ADS':'64748B','CLIPS':'A78BFA','Mercado Livre':'22D3EE','Amazon':'F5943A'};
+    const cc = (n,i) => {const k=Object.keys(CHC).find(c=>c.toLowerCase()===n.toLowerCase());return k?CHC[k]:['A78BFA','F472B6','64748B','D97706','0EA5E9'][i%5];};
+    const mkS=()=>({type:'outer',blur:6,offset:2,angle:135,color:'000000',opacity:0.2});
+    const fCp=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+    const fNp=v=>Math.round(v).toLocaleString('pt-BR');
+    const fPp=v=>v.toFixed(2)+'%';
+    const fDp=v=>v.toFixed(2)+'x';
+    const fMp=(v,m)=>{if(['spend','revenue','aov'].includes(m))return fCp(v);if(m==='roas')return fDp(v);if(['acos','ctr','cr'].includes(m))return fPp(v);return fNp(v);};
+
+    const ym = {};
+    selectedYears.forEach(y=>{ym[y]=calcMetrics(yearlyData[y]||[]);});
+
+    const pres = new PptxGenJS();
+    pres.layout='LAYOUT_16x9';
+    pres.author='Mindgruve Intelligence';
+    pres.title='Annual Performance Report';
+
+    const addBar = s => s.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.04,fill:{color:P.red}});
+    const addTitle = (s,txt) => s.addText(txt,{x:0.6,y:0.3,w:8,h:0.5,fontSize:11,fontFace:'Calibri',bold:true,color:P.t3,charSpacing:4,margin:0});
+
+    // ─── SLIDE 1: COVER ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);
+    s.addShape(pres.shapes.RECTANGLE,{x:9.6,y:0,w:0.4,h:5.625,fill:{color:P.red}});
+    s.addText('MINDGRUVE',{x:0.8,y:1.5,w:8,h:0.7,fontSize:44,fontFace:'Georgia',bold:true,color:P.t1,margin:0});
+    s.addText('Annual Performance Report',{x:0.8,y:2.2,w:8,h:0.5,fontSize:20,fontFace:'Calibri',color:P.t2,margin:0});
+    s.addText(`${selectedYears[0]} — ${selectedYears[selectedYears.length-1]}`,{x:0.8,y:3.0,w:3,h:0.5,fontSize:16,fontFace:'Calibri',bold:true,color:P.red,margin:0});
+    s.addText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`,{x:0.8,y:4.8,w:4,h:0.3,fontSize:10,fontFace:'Calibri',color:P.t3,margin:0});}
+
+    // ─── SLIDE 2: KPI OVERVIEW ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'VISÃO GERAL');
+    const la=selectedYears[selectedYears.length-1],pr=selectedYears.length>1?selectedYears[selectedYears.length-2]:null;
+    const mL=ym[la],mP=pr?ym[pr]:null;
+    const kpis=[{l:'Receita',v:mL.revenue,b:mP?.revenue,f:'c',c:P.red},{l:'Investimento',v:mL.spend,b:mP?.spend,f:'c',c:P.blue},{l:'ROAS',v:mL.roas,b:mP?.roas,f:'d',c:P.yellow},{l:'ACOS',v:mL.acos,b:mP?.acos,f:'p',rev:true,c:P.green},{l:'Pedidos',v:mL.orders,b:mP?.orders,f:'n',c:P.purple},{l:'Ticket Médio',v:mL.aov,b:mP?.aov,f:'c',c:P.cyan}];
+    const cW=2.7,cH=1.2,gap=0.3,cols=3,sx=(10-(cols*cW+(cols-1)*gap))/2;
+    kpis.forEach((k,i)=>{
+        const col=i%cols,row=Math.floor(i/cols),x=sx+col*(cW+gap),y=1.2+row*(cH+gap+0.15);
+        s.addShape(pres.shapes.RECTANGLE,{x,y,w:cW,h:cH,fill:{color:P.card},shadow:mkS()});
+        s.addShape(pres.shapes.RECTANGLE,{x,y,w:cW,h:0.04,fill:{color:k.c}});
+        s.addText(k.l.toUpperCase(),{x:x+.15,y:y+.12,w:cW-.3,h:.25,fontSize:8,fontFace:'Calibri',bold:true,color:P.t3,margin:0});
+        const val=k.f==='c'?fCp(k.v):k.f==='p'?fPp(k.v):k.f==='n'?fNp(k.v):fDp(k.v);
+        s.addText(val,{x:x+.15,y:y+.35,w:cW-.3,h:.4,fontSize:22,fontFace:'Georgia',bold:true,color:P.t1,margin:0});
+        if(k.b&&k.b>0){const d=((k.v-k.b)/k.b)*100;const g=k.rev?d<0:d>0;
+        s.addText(`${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)}% vs ${pr}`,{x:x+.15,y:y+.85,w:cW-.3,h:.25,fontSize:9,fontFace:'Calibri',bold:true,color:g?P.green:P.red,margin:0});}
+    });
+    s.addText(`Período: ${la} vs ${pr||'N/A'}`,{x:.6,y:5.1,w:8,h:.3,fontSize:9,fontFace:'Calibri',color:P.t3,margin:0});}
+
+    // ─── SLIDE 3: ANNUAL TABLE ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'COMPARATIVO ANUAL');
+    const ms=[{id:'revenue',l:'Receita'},{id:'spend',l:'Investimento'},{id:'roas',l:'ROAS'},{id:'acos',l:'ACOS'},{id:'orders',l:'Pedidos'},{id:'ctr',l:'CTR'},{id:'cpc',l:'CPC'},{id:'aov',l:'Ticket Médio'}];
+    const hRow=[{text:'Métrica',options:{fill:{color:P.alt},color:P.t3,bold:true,fontSize:9,fontFace:'Calibri'}},...selectedYears.map(y=>({text:String(y),options:{fill:{color:P.alt},color:yc(y),bold:true,fontSize:9,fontFace:'Calibri',align:'right'}}))];
+    const dRows=ms.map(m=>[{text:m.l,options:{color:P.t1,bold:true,fontSize:9,fontFace:'Calibri'}},...selectedYears.map(y=>({text:fMp(ym[y][m.id],m.id),options:{color:P.t2,fontSize:9,fontFace:'Calibri',align:'right'}}))]);
+    s.addTable([hRow,...dRows],{x:.6,y:1,w:8.8,colW:[1.8,...selectedYears.map(()=>(8.2-1.8)/selectedYears.length)],border:{pt:.5,color:P.brd},rowH:.38,autoPage:false});}
+
+    // ─── SLIDE 4: REVENUE & SPEND TREND ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'TENDÊNCIA DE RECEITA & INVESTIMENTO');
+    s.addChart(pres.charts.BAR,[
+        {name:'Receita',labels:selectedYears.map(String),values:selectedYears.map(y=>ym[y].revenue)},
+        {name:'Investimento',labels:selectedYears.map(String),values:selectedYears.map(y=>ym[y].spend)}
+    ],{x:.5,y:1,w:9,h:4,barDir:'col',chartColors:[P.red,P.blue],chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showValue:true,dataLabelColor:P.t1,dataLabelPosition:'outEnd',showLegend:true,legendPos:'b',legendColor:P.t2});}
+
+    // ─── SLIDE 5: EFFICIENCY ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'EVOLUÇÃO DE EFICIÊNCIA');
+    s.addChart(pres.charts.LINE,[{name:'ROAS',labels:selectedYears.map(String),values:selectedYears.map(y=>ym[y].roas)}],{x:.5,y:1,w:4.2,h:3.8,lineSize:3,lineSmooth:true,chartColors:[P.red],chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showValue:true,dataLabelColor:P.t1,showLegend:false});
+    s.addChart(pres.charts.LINE,[{name:'ACOS',labels:selectedYears.map(String),values:selectedYears.map(y=>ym[y].acos)}],{x:5.2,y:1,w:4.2,h:3.8,lineSize:3,lineSmooth:true,chartColors:[P.yellow],chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showValue:true,dataLabelColor:P.t1,showLegend:false});
+    s.addText('ROAS',{x:.5,y:4.9,w:4.2,h:.3,fontSize:10,fontFace:'Calibri',bold:true,color:P.red,align:'center',margin:0});
+    s.addText('ACOS',{x:5.2,y:4.9,w:4.2,h:.3,fontSize:10,fontFace:'Calibri',bold:true,color:P.yellow,align:'center',margin:0});}
+
+    // ─── SLIDE 6: SEASONALITY ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'SAZONALIDADE — RECEITA MENSAL');
+    const ds=selectedYears.map(y=>({name:String(y),labels:MESES,values:MESES.map((_,i)=>{const sub=(yearlyData[y]||[]).filter(d=>d.month===i+1);return calcMetrics(sub).revenue;})}));
+    s.addChart(pres.charts.LINE,ds,{x:.5,y:1,w:9,h:4,lineSize:2.5,lineSmooth:true,chartColors:selectedYears.map(y=>yc(y)),chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showLegend:true,legendPos:'b',legendColor:P.t2});}
+
+    // ─── SLIDE 7: CHANNEL EVOLUTION ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'EVOLUÇÃO POR CANAL');
+    const channels=[...new Set(rawData.map(r=>r.type))].filter(Boolean);
+    const mkDS=(metric)=>channels.map(ch=>({name:ch,labels:selectedYears.map(String),values:selectedYears.map(y=>(yearlyData[y]||[]).filter(d=>d.type===ch).reduce((a,b)=>a+(b[metric]||0),0))}));
+    s.addChart(pres.charts.BAR,mkDS('spend'),{x:.3,y:1,w:4.5,h:3.8,barDir:'col',barGrouping:'stacked',chartColors:channels.map((c,i)=>cc(c,i)),chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showLegend:true,legendPos:'b',legendColor:P.t2});
+    s.addChart(pres.charts.BAR,mkDS('revenue'),{x:5.2,y:1,w:4.5,h:3.8,barDir:'col',barGrouping:'stacked',chartColors:channels.map((c,i)=>cc(c,i)),chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showLegend:false});
+    s.addText('INVESTIMENTO POR CANAL',{x:.3,y:4.9,w:4.5,h:.3,fontSize:9,fontFace:'Calibri',bold:true,color:P.t2,align:'center',margin:0});
+    s.addText('RECEITA POR CANAL',{x:5.2,y:4.9,w:4.5,h:.3,fontSize:9,fontFace:'Calibri',bold:true,color:P.t2,align:'center',margin:0});}
+
+    // ─── SLIDE 8: QUARTERLY ───
+    {const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'ANÁLISE TRIMESTRAL — RECEITA');
+    const QS=[{l:'Q1',m:[1,2,3]},{l:'Q2',m:[4,5,6]},{l:'Q3',m:[7,8,9]},{l:'Q4',m:[10,11,12]}];
+    const dsQ=selectedYears.map(y=>({name:String(y),labels:QS.map(q=>q.l),values:QS.map(q=>{const sub=(yearlyData[y]||[]).filter(d=>q.m.includes(d.month));return calcMetrics(sub).revenue;})}));
+    s.addChart(pres.charts.BAR,dsQ,{x:.5,y:1,w:9,h:4,barDir:'col',chartColors:selectedYears.map(y=>yc(y)),chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showLegend:true,legendPos:'b',legendColor:P.t2});}
+
+    // ─── SLIDE 9: CAGR ───
+    if(selectedYears.length>=3){
+        const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'CRESCIMENTO COMPOSTO (CAGR)');
+        const fi=selectedYears[0],la=selectedYears[selectedYears.length-1],n=la-fi;
+        const mF=ym[fi],mL=ym[la];
+        const cg=(s,e)=>s>0&&n>0?(Math.pow(e/s,1/n)-1)*100:0;
+        const items=[{l:'Receita',v:cg(mF.revenue,mL.revenue),c:P.red},{l:'Investimento',v:cg(mF.spend,mL.spend),c:P.blue},{l:'Pedidos',v:cg(mF.orders,mL.orders),c:P.purple},{l:'Unidades',v:cg(mF.units,mL.units),c:P.green}];
+        const cW2=3.8,cH2=1,g2=.4,cols2=2,sx2=(10-(cols2*cW2+(cols2-1)*g2))/2;
+        items.forEach((c,i)=>{
+            const col=i%cols2,row=Math.floor(i/cols2),x=sx2+col*(cW2+g2),y=1.4+row*(cH2+g2);
+            s.addShape(pres.shapes.RECTANGLE,{x,y,w:cW2,h:cH2,fill:{color:P.card},shadow:mkS()});
+            s.addShape(pres.shapes.RECTANGLE,{x,y,w:.06,h:cH2,fill:{color:c.c}});
+            s.addText(c.l.toUpperCase(),{x:x+.25,y:y+.12,w:2,h:.25,fontSize:9,fontFace:'Calibri',bold:true,color:P.t3,margin:0});
+            s.addText(`${c.v>0?'+':''}${c.v.toFixed(1)}% / ano`,{x:x+.25,y:y+.4,w:3,h:.4,fontSize:24,fontFace:'Georgia',bold:true,color:c.v>=0?P.green:P.red,margin:0});
+        });
+        s.addText(`CAGR: ${fi} → ${la} (${n} anos)`,{x:.6,y:4.8,w:8,h:.3,fontSize:9,fontFace:'Calibri',color:P.t3,margin:0});
+    }
+
+    // ─── SLIDE 10: YOY GROWTH ───
+    if(selectedYears.length>=2){
+        const s=pres.addSlide();s.background={color:P.bg};addBar(s);addTitle(s,'CRESCIMENTO YEAR-OVER-YEAR');
+        const lb=[],rv=[],sv=[];
+        for(let i=1;i<selectedYears.length;i++){
+            lb.push(`${selectedYears[i-1]}→${selectedYears[i]}`);
+            const p=ym[selectedYears[i-1]],c=ym[selectedYears[i]];
+            rv.push(p.revenue>0?((c.revenue-p.revenue)/p.revenue)*100:0);
+            sv.push(p.spend>0?((c.spend-p.spend)/p.spend)*100:0);
+        }
+        s.addChart(pres.charts.BAR,[{name:'Receita %',labels:lb,values:rv},{name:'Investimento %',labels:lb,values:sv}],{x:.5,y:1,w:9,h:4,barDir:'col',chartColors:[P.green,P.blue],chartArea:{fill:{color:P.card},roundedCorners:true},catAxisLabelColor:P.t3,valAxisLabelColor:P.t3,valGridLine:{color:P.brd,size:.5},catGridLine:{style:'none'},showValue:true,dataLabelColor:P.t1,showLegend:true,legendPos:'b',legendColor:P.t2});
+    }
+
+    // ─── SLIDE 11: CLOSING ───
+    {const s=pres.addSlide();s.background={color:P.bg};
+    s.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:.04,fill:{color:P.red}});
+    s.addShape(pres.shapes.RECTANGLE,{x:0,y:5.585,w:10,h:.04,fill:{color:P.red}});
+    s.addText('MINDGRUVE',{x:.5,y:1.8,w:9,h:.8,fontSize:40,fontFace:'Georgia',bold:true,color:P.t1,align:'center',margin:0});
+    s.addText('Intelligence Suite',{x:.5,y:2.6,w:9,h:.5,fontSize:18,fontFace:'Calibri',color:P.t3,align:'center',margin:0});
+    s.addText(`Annual Report ${selectedYears[0]}-${selectedYears[selectedYears.length-1]}`,{x:.5,y:3.3,w:9,h:.4,fontSize:14,fontFace:'Calibri',bold:true,color:P.red,align:'center',margin:0});}
+
+    // SAVE
+    pres.writeFile({fileName:`Mindgruve_Annual_Report_${selectedYears[0]}-${selectedYears[selectedYears.length-1]}.pptx`});
+}
 
 // ════════════════════ MULTI-SELECT DROPDOWN COMPONENT ════════════════════
 const msInstances = {};
